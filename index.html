@@ -5,6 +5,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Andhy Wulandari POS - Official</title>
     <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-database-compat.js"></script>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
     <style>
     .page { display: none; }
@@ -272,8 +274,56 @@
     </div>
 
     <script>
-        const getData = (k) => JSON.parse(localStorage.getItem(k)) || [];
-        const setData = (k, v) => localStorage.setItem(k, JSON.stringify(v));
+        // --- MULAI PENYESUAIAN FIREBASE (FITUR ASLI TETAP UTUH) ---
+const firebaseConfig = {
+    apiKey: "AIzaSyBYn4LO6bdNNVUTJHqxbmJqouErIRiyLgs",
+    authDomain: "pos-wulan.firebaseapp.com",
+    databaseURL: "https://pos-wulan-default-rtdb.firebaseio.com",
+    projectId: "pos-wulan",
+    storageBucket: "pos-wulan.firebasestorage.app",
+    messagingSenderId: "481064289731",
+    appId: "1:481064289731:web:5b636e132fcc1c4c75a976"
+};
+
+firebase.initializeApp(firebaseConfig);
+const db = firebase.database();
+
+// Fungsi Sinkronisasi: Menghubungkan Cloud ke Fitur Render Asli Anda
+function initRealtimeSync() {
+    const collections = ['menus', 'orders', 'users', 'biz_profile'];
+    collections.forEach(col => {
+        db.ref(col).on('value', (snapshot) => {
+            const data = snapshot.val() || [];
+            localStorage.setItem(col, JSON.stringify(data));
+            
+            // Memanggil fungsi render asli milik Anda tanpa mengubah isinya
+            if(col === 'menus') { 
+                if(typeof renderAdminMenu === 'function') renderAdminMenu(); 
+                if(typeof renderCustomerMenu === 'function') renderCustomerMenu(); 
+            }
+            if(col === 'orders') { 
+                if(typeof renderAdminOrders === 'function') renderAdminOrders(); 
+                if(typeof renderCustomerOrders === 'function') renderCustomerOrders(); 
+                if(typeof renderAdminReports === 'function') renderAdminReports();
+            }
+            if(col === 'users') { 
+                if(typeof renderAdminUsers === 'function') renderAdminUsers(); 
+            }
+        });
+    });
+}
+
+// Jalankan sinkronisasi saat aplikasi dibuka
+initRealtimeSync();
+
+// Definisikan ulang getData & setData agar mendukung Cloud
+const getData = (k) => JSON.parse(localStorage.getItem(k)) || [];
+const setData = (k, v) => {
+    localStorage.setItem(k, JSON.stringify(v)); 
+    db.ref(k).set(v); // Mengirim data ke Firebase Cloud
+};
+// --- AKHIR PENYESUAIAN FIREBASE ---
+
         
         let currentUser = JSON.parse(localStorage.getItem('session')) || null;
         let cart = [];
